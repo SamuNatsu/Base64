@@ -27,26 +27,19 @@
 
 #include <string>
 
+namespace {
+
+unsigned int S2E(char);
+
+}
+
 namespace Base64 {
 
-class Convertor {
-    public:
-        Convertor();
-        Convertor(const Convertor&) = delete;
-        ~Convertor();
+std::string StringToBase64(const std::string&);
+std::string StringToBase64(std::string&&);
 
-        Convertor& operator=(const Convertor&) = delete;
-
-        static std::string StringToBase64(const std::string&);
-        static std::string StringToBase64(std::string&&);
-
-        static std::string Base64ToString(const std::string&);
-        static std::string Base64ToString(std::string&&);
-
-    private:
-        static const char m_Mapping[64];
-        static unsigned int S2E(char);
-};
+std::string Base64ToString(const std::string&);
+std::string Base64ToString(std::string&&);
 
 }
 
@@ -54,62 +47,9 @@ class Convertor {
 
 #ifdef BASE64_IMPLEMENTATION
 
-namespace Base64 {
+namespace {
 
-std::string Convertor::StringToBase64(const std::string& str) {
-    std::string _rtn;
-    unsigned int _t = 0;
-    for (size_t i = 0; i < str.length(); ++i) {
-        if (i && i % 3 == 0) {
-            _rtn += m_Mapping[_t >> 18];
-            _rtn += m_Mapping[(_t & 0x3FFFF) >> 12];
-            _rtn += m_Mapping[(_t & 0xFFF) >> 6];
-            _rtn += m_Mapping[_t & 0x3F];
-            _t = 0;
-        }
-        _t = _t << 8 | str[i];
-    }
-    if (_t) {
-        for (size_t i = str.length(); i % 3; ++i)
-            _t <<= 8;
-        _rtn += m_Mapping[_t >> 18];
-        _rtn += m_Mapping[(_t & 0x3FFFF) >> 12];
-        _rtn += ((_t & 0xFFF) >> 6) || (_t & 0x3F) ? m_Mapping[(_t & 0xFFF) >> 6] : '=';
-        _rtn += (_t & 0x3F) ? m_Mapping[_t & 0x3F] : '=';
-    }
-    return _rtn;
-}
-std::string Convertor::StringToBase64(std::string&& str) {
-    return StringToBase64(str);
-}
-
-std::string Convertor::Base64ToString(const std::string& str) {
-    std::string _rtn;
-    size_t i;
-    unsigned int _t = 0;
-    for (i = 0; str[i] != '=' && i < str.length(); ++i) {
-        if (i && i % 4 == 0) {
-            _rtn += (unsigned char)(_t >> 16);
-            _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
-            _rtn += (unsigned char)(_t & 0xFF);
-            _t = 0;
-        }
-        _t = _t << 6 | S2E(str[i]);
-    }
-    if (_t) {
-        for (; i % 4; ++i)
-            _t <<= 6;
-        _rtn += (unsigned char)(_t >> 16);
-        _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
-        _rtn += (unsigned char)(_t & 0xFF);
-    }
-    return _rtn;
-}
-std::string Convertor::Base64ToString(std::string&& str) {
-    return Base64ToString(str);
-}
-
-unsigned int Convertor::S2E(char tmp) {
+unsigned int S2E(char tmp) {
     if (isupper(tmp))
         return tmp - 65;
     if (islower(tmp))
@@ -123,9 +63,66 @@ unsigned int Convertor::S2E(char tmp) {
     return 0;
 }
 
-const char Convertor::m_Mapping[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
-    'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
+}
+
+namespace Base64 {
+
+std::string StringToBase64(const std::string& str) {
+    static const char mapping[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
+        'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8',
+        '9', '+', '/'};
+    std::string _rtn;
+    unsigned int _t = 0;
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (i && i % 3 == 0) {
+            _rtn += mapping[_t >> 18];
+            _rtn += mapping[(_t & 0x3FFFF) >> 12];
+            _rtn += mapping[(_t & 0xFFF) >> 6];
+            _rtn += mapping[_t & 0x3F];
+            _t = 0;
+        }
+        _t = _t << 8 | str[i];
+    }
+    if (_t) {
+        for (size_t i = str.length(); i % 3; ++i)
+            _t <<= 8;
+        _rtn += mapping[_t >> 18];
+        _rtn += mapping[(_t & 0x3FFFF) >> 12];
+        _rtn += ((_t & 0xFFF) >> 6) || (_t & 0x3F) ? mapping[(_t & 0xFFF) >> 6] : '=';
+        _rtn += (_t & 0x3F) ? mapping[_t & 0x3F] : '=';
+    }
+    return _rtn;
+}
+std::string StringToBase64(std::string&& str) {
+    return StringToBase64(str);
+}
+
+std::string Base64ToString(const std::string& str) {
+    std::string _rtn;
+    size_t i;
+    unsigned int _t = 0;
+    for (i = 0; str[i] != '=' && i < str.length(); ++i) {
+        if (i && i % 4 == 0) {
+            _rtn += (unsigned char)(_t >> 16);
+            _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
+            _rtn += (unsigned char)(_t & 0xFF);
+            _t = 0;
+        }
+        _t = _t << 6 | ::S2E(str[i]);
+    }
+    if (_t) {
+        for (; i % 4; ++i)
+            _t <<= 6;
+        _rtn += (unsigned char)(_t >> 16);
+        _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
+        _rtn += (unsigned char)(_t & 0xFF);
+    }
+    return _rtn;
+}
+std::string Base64ToString(std::string&& str) {
+    return Base64ToString(str);
+}
 
 }
 
