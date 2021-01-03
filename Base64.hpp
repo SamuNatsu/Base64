@@ -27,12 +27,6 @@
 
 #include <string>
 
-namespace {
-
-unsigned int S2E(char);
-
-}
-
 namespace Base64 {
 
 std::string StringToBase64(const std::string&);
@@ -46,24 +40,6 @@ std::string Base64ToString(std::string&&);
 #endif
 
 #ifdef BASE64_IMPLEMENTATION
-
-namespace {
-
-unsigned int S2E(char tmp) {
-    if (isupper(tmp))
-        return tmp - 65;
-    if (islower(tmp))
-        return tmp - 71;
-    if (isdigit(tmp))
-        return tmp + 4;
-    if (tmp == '+')
-        return 62;
-    if (tmp == '/')
-        return 63;
-    return 0;
-}
-
-}
 
 namespace Base64 {
 
@@ -109,7 +85,13 @@ std::string Base64ToString(const std::string& str) {
             _rtn += (unsigned char)(_t & 0xFF);
             _t = 0;
         }
-        _t = _t << 6 | ::S2E(str[i]);
+        _t = _t << 6 | [](char tmp)->unsigned int {
+            if (isupper(tmp)) return tmp - 65;
+            if (islower(tmp)) return tmp - 71;
+            if (isdigit(tmp)) return tmp + 4;
+            if (tmp == '+') return 62;
+            if (tmp == '/') return 63;
+            return 0;}(str[i]);
     }
     if (_t) {
         for (; i % 4; ++i)
