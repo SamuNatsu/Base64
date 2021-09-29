@@ -1,7 +1,7 @@
 /**
  * MIT License
  * 
- * Copyright (c) 2020 SamuNatsu
+ * Copyright (c) 2021 SamuNatsu(https://github.com/SamuNatsu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,90 +22,82 @@
  * SOFTWARE.
 **/
 
-#ifndef BASE64_H_INCLUDED
-#define BASE64_H_INCLUDED
+#ifndef BASE64_HPP_INCLUDED
+#define BASE64_HPP_INCLUDED
 
 #include <string>
 
-namespace Base64 {
+class Base64 {
+    public:
+        Base64() = delete;
+        Base64(const Base64&) = delete;
+        ~Base64() = delete;
 
-std::string StringToBase64(const std::string&);
-std::string StringToBase64(std::string&&);
+        Base64& operator=(const Base64&) = delete;
 
-std::string Base64ToString(const std::string&);
-std::string Base64ToString(std::string&&);
-
-}
-
-#endif
-
-#ifdef BASE64_IMPLEMENTATION
-
-namespace Base64 {
-
-std::string StringToBase64(const std::string& str) {
-    static const char mapping[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
-        'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8',
-        '9', '+', '/'};
-    std::string _rtn;
-    unsigned int _t = 0;
-    for (size_t i = 0; i < str.length(); ++i) {
-        if (i && i % 3 == 0) {
-            _rtn += mapping[_t >> 18];
-            _rtn += mapping[(_t & 0x3FFFF) >> 12];
-            _rtn += mapping[(_t & 0xFFF) >> 6];
-            _rtn += mapping[_t & 0x3F];
-            _t = 0;
+        // Convert a plain string to Base64 string
+        static std::string to(const std::string& src) {
+            static const char* s_Map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            unsigned int tmp = 0;
+            std::string rtn;
+            for (size_t i = 0; i < src.length(); ++i) {
+                if (i && i % 3 == 0) {
+                    for (int j = 18; j >= 0; j -= 6)
+                        rtn += s_Map[(tmp >> j) & 0x3F];
+                    tmp = 0;
+                }
+                tmp <<= 8;
+                tmp |= src[i];
+            }
+            if (tmp) {
+                for (size_t i = src.length(); i % 3; ++i)
+                    tmp <<= 8;
+                rtn += s_Map[tmp >> 18];
+                rtn += s_Map[(tmp >> 12) & 0x3F];
+                rtn += ((tmp >> 6) & 0x3F) || (tmp & 0x3F) ? s_Map[(tmp >> 6) & 0x3F] : '=';
+                rtn += (tmp & 0x3F) ? s_Map[tmp & 0x3F] : '=';
+            }
+            return rtn;
         }
-        _t = _t << 8 | str[i];
-    }
-    if (_t) {
-        for (size_t i = str.length(); i % 3; ++i)
-            _t <<= 8;
-        _rtn += mapping[_t >> 18];
-        _rtn += mapping[(_t & 0x3FFFF) >> 12];
-        _rtn += ((_t & 0xFFF) >> 6) || (_t & 0x3F) ? mapping[(_t & 0xFFF) >> 6] : '=';
-        _rtn += (_t & 0x3F) ? mapping[_t & 0x3F] : '=';
-    }
-    return _rtn;
-}
-std::string StringToBase64(std::string&& str) {
-    return StringToBase64(str);
-}
 
-std::string Base64ToString(const std::string& str) {
-    std::string _rtn;
-    size_t i;
-    unsigned int _t = 0;
-    for (i = 0; str[i] != '=' && i < str.length(); ++i) {
-        if (i && i % 4 == 0) {
-            _rtn += (unsigned char)(_t >> 16);
-            _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
-            _rtn += (unsigned char)(_t & 0xFF);
-            _t = 0;
+        // Convert a Base64 string to plain string, returns a pair(status code, result), 0 for success, -1 for invalid character, -2 for invalid end
+        static std::pair<int, std::string> from(const std::string& src) {
+            unsigned int tmp = 0;
+            std::string rtn;
+            size_t i = 0;
+            for (; i < src.length() && src[i] != '='; ++i) {
+                if (!isalpha(src[i]) && !isdigit(src[i]) && src[i] != '+' && src[i] != '/')
+                    return {-1, ""};
+                if (i && i % 4 == 0) {
+                    for (int j = 16; j >= 0; j -= 8)
+                        rtn += (unsigned char)((tmp >> j) & 0xFF);
+                    tmp = 0;
+                }
+                tmp <<= 6;
+                if (isupper(src[i]))
+                    tmp |= src[i] - 65;
+                else if (islower(src[i]))
+                    tmp |= src[i] - 71;
+                else if (isdigit(src[i]))
+                    tmp |= src[i] + 4;
+                else if (src[i] == '+')
+                    tmp |= 62;
+                else 
+                    tmp |= 63;
+            }
+            if (tmp) {
+                for (; i < src.length() && i % 4; ++i)
+                    if (src[i] != '=')
+                        return {-2, ""};
+                    else 
+                        tmp <<= 6;
+                if (i % 4)
+                    return {-2, ""};
+                for (int j = 16; j >= 0; j -= 8)
+                    rtn += (unsigned char)((tmp >> j) & 0xFF);
+            }
+            return {0, rtn};
         }
-        _t = _t << 6 | [](char tmp)->unsigned int {
-            if (isupper(tmp)) return tmp - 65;
-            if (islower(tmp)) return tmp - 71;
-            if (isdigit(tmp)) return tmp + 4;
-            if (tmp == '+') return 62;
-            if (tmp == '/') return 63;
-            return 0;}(str[i]);
-    }
-    if (_t) {
-        for (; i % 4; ++i)
-            _t <<= 6;
-        _rtn += (unsigned char)(_t >> 16);
-        _rtn += (unsigned char)((_t & 0xFFFF) >> 8);
-        _rtn += (unsigned char)(_t & 0xFF);
-    }
-    return _rtn;
-}
-std::string Base64ToString(std::string&& str) {
-    return Base64ToString(str);
-}
-
-}
+};
 
 #endif
