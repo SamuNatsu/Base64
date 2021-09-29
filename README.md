@@ -16,9 +16,10 @@ int main() {
     std::string b64 = Base64::to(src);
     
     // Convert Base64 string to plain string
-    std::string _src = Base64::from(b64);
+    // first: 0 for success, -1 for invalid char, -2 for invalid end
+    std::pair<int, std::string> _src = Base64::from(b64);
     
-    std::cout << "src: " << src << "\nb64: " << b64 << "\n_src: " << _src << std::endl;
+    std::cout << "src: " << src << "\nb64: " << b64 << "\n_src: " << _src.second << std::endl;
     
     return 0;
 }
