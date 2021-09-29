@@ -3,10 +3,8 @@ One header base64 convertor
 
 # How to use
 ```cpp
-#include <cstdio>
-
-// You SHOULD define it ONLY ONCE in any source file before the header
-#define BASE64_IMPLEMENTATION
+#include <string>
+#include <iostream>
 
 // This is the only header you need
 #include "Base64.hpp"
@@ -14,13 +12,13 @@ One header base64 convertor
 int main() {
     std::string src = "Hello World!";
     
-    // Convert multichars to base64 string
-    std::string b64 = Base64::StringToBase64(src);
+    // Convert plain string to Base64 string
+    std::string b64 = Base64::to(src);
     
-    // Convert base64 string to multichars
-    std::string _src = Base64::Base64ToString(b64);
+    // Convert Base64 string to plain string
+    std::string _src = Base64::from(b64);
     
-    printf("src:\t%s\nb64:\t%s\n_src:\t%s\n", src.c_str(), b64.c_str(), _src.c_str());
+    std::cout << "src: " << src << "\nb64: " << b64 << "\n_src: " << _src << std::endl;
     
     return 0;
 }
