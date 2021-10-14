@@ -41,10 +41,9 @@ class Base64 {
             unsigned int tmp = 0;
             std::string rtn;
             for (size_t i = 0; i < src.length(); i += 3) {
-                tmp = 
-                    ((unsigned int)src[i] << 16) | 
-                    ((i + 1 >= src.length() ? 0 : (unsigned int)src[i + 1]) << 8) | 
-                    (i + 2 >= src.length() ? 0 : (unsigned int)src[i + 2]);
+                tmp = ((unsigned int)src[i] & 0xFF) << 16;
+                tmp |= (i + 1 >= src.length() ? 0 : ((unsigned int)src[i + 1] & 0xFF) << 8);
+                tmp |= (i + 2 >= src.length() ? 0 : (unsigned int)src[i + 2] & 0xFF);
                 rtn += s_Map[tmp >> 18 & 0x3F];
                 rtn += s_Map[tmp >> 12 & 0x3F];
                 rtn += s_Map[tmp >> 6 & 0x3F];
