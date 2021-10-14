@@ -99,14 +99,14 @@ class Base64 {
                 else if (i % 4 == 1)
                     return {-2, ""};
                 else if (i % 4 == 2) {
-                    if (i + 2 >= src.length() || src[i + 1] != '=' || src[i + 2] != '=')
+                    if (i + 1 >= src.length() || src[i] != '=' || src[i + 1] != '=')
                         return {-2, ""};
                     tmp <<= 4;
                     rtn += (unsigned char)(tmp >> 8 & 0xFF);
                     rtn += (unsigned char)(tmp & 0xFF);
                 }
                 else if (i % 4 == 3) {
-                    if (i + 1 >= src.length() || src[i + 1] != '=')
+                    if (src[i] != '=')
                         return {-2, ""};
                     tmp <<= 6;
                     rtn += (unsigned char)(tmp >> 16 & 0xFF);
