@@ -1,18 +1,18 @@
 /**
  * MIT License
- * 
+ *
  * Copyright (c) 2021 SamuNatsu(https://github.com/SamuNatsu)
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,23 +40,20 @@ class Base64 {
             static const char* s_Map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
             unsigned int tmp = 0;
             std::string rtn;
-            for (size_t i = 0; i < src.length(); ++i) {
-                if (i && i % 3 == 0) {
-                    for (int j = 18; j >= 0; j -= 6)
-                        rtn += s_Map[(tmp >> j) & 0x3F];
-                    tmp = 0;
-                }
-                tmp <<= 8;
-                tmp |= src[i];
+            for (size_t i = 0; i < src.length(); i += 3) {
+                tmp = 
+                    ((unsigned int)src[i] << 16) | 
+                    ((i + 1 >= src.length() ? 0 : (unsigned int)src[i + 1]) << 8) | 
+                    (i + 2 >= src.length() ? 0 : (unsigned int)src[i + 2]);
+                rtn += s_Map[tmp >> 18 & 0x3F];
+                rtn += s_Map[tmp >> 12 & 0x3F];
+                rtn += s_Map[tmp >> 6 & 0x3F];
+                rtn += s_Map[tmp & 0x3F];
             }
-            if (tmp) {
-                for (size_t i = src.length(); i % 3; ++i)
-                    tmp <<= 8;
-                rtn += s_Map[tmp >> 18];
-                rtn += s_Map[(tmp >> 12) & 0x3F];
-                rtn += ((tmp >> 6) & 0x3F) || (tmp & 0x3F) ? s_Map[(tmp >> 6) & 0x3F] : '=';
-                rtn += (tmp & 0x3F) ? s_Map[tmp & 0x3F] : '=';
-            }
+            if (src.length() % 3 == 1)
+                rtn[rtn.length() - 1] = rtn[rtn.length() - 2] = '=';
+            else if (src.length() % 3 == 2)
+                rtn[rtn.length() - 1] = '=';
             return rtn;
         }
 
@@ -69,8 +66,9 @@ class Base64 {
                 if (!isalpha(src[i]) && !isdigit(src[i]) && src[i] != '+' && src[i] != '/')
                     return {-1, ""};
                 if (i && i % 4 == 0) {
-                    for (int j = 16; j >= 0; j -= 8)
-                        rtn += (unsigned char)((tmp >> j) & 0xFF);
+                    rtn += (unsigned char)(tmp >> 16 & 0xFF);
+                    rtn += (unsigned char)(tmp >> 8 & 0xFF);
+                    rtn += (unsigned char)(tmp & 0xFF);
                     tmp = 0;
                 }
                 tmp <<= 6;
@@ -82,19 +80,39 @@ class Base64 {
                     tmp |= src[i] + 4;
                 else if (src[i] == '+')
                     tmp |= 62;
-                else 
+                else
                     tmp |= 63;
             }
-            if (tmp) {
-                for (; i < src.length() && i % 4; ++i)
-                    if (src[i] != '=')
-                        return {-2, ""};
-                    else 
-                        tmp <<= 6;
-                if (i % 4)
+            if (i == src.length()) {
+                if (src.length() % 4)
                     return {-2, ""};
-                for (int j = 16; j >= 0; j -= 8)
-                    rtn += (unsigned char)((tmp >> j) & 0xFF);
+                rtn += (unsigned char)(tmp >> 16 & 0xFF);
+                rtn += (unsigned char)(tmp >> 8 & 0xFF);
+                rtn += (unsigned char)(tmp & 0xFF);
+            }
+            else {
+                if (i % 4 == 0) {
+                    rtn += (unsigned char)(tmp >> 16 & 0xFF);
+                    rtn += (unsigned char)(tmp >> 8 & 0xFF);
+                    rtn += (unsigned char)(tmp & 0xFF);
+                }
+                else if (i % 4 == 1)
+                    return {-2, ""};
+                else if (i % 4 == 2) {
+                    if (i + 2 >= src.length() || src[i + 1] != '=' || src[i + 2] != '=')
+                        return {-2, ""};
+                    tmp <<= 4;
+                    rtn += (unsigned char)(tmp >> 8 & 0xFF);
+                    rtn += (unsigned char)(tmp & 0xFF);
+                }
+                else if (i % 4 == 3) {
+                    if (i + 1 >= src.length() || src[i + 1] != '=')
+                        return {-2, ""};
+                    tmp <<= 6;
+                    rtn += (unsigned char)(tmp >> 16 & 0xFF);
+                    rtn += (unsigned char)(tmp >> 8 & 0xFF);
+                    rtn += (unsigned char)(tmp & 0xFF);
+                }
             }
             return {0, rtn};
         }
